@@ -165,26 +165,22 @@ eng-dados-project/
 │       ├── architecture_diagram.png
 │       └── medallion_flow.png
 │
-├── notebooks/                     # Jupyter Notebooks
-│   ├── pipeline_principal.ipynb  # Main pipeline (Bronze → Silver → Gold)
-│   ├── data_processing.ipynb     # Processing and transformations
+├── notebooks/                    # Jupyter Notebooks
+│   ├── main_pipeline.ipynb       # Main pipeline (Bronze → Silver → Gold)
 │   └── analytics.ipynb           # Portability analysis and insights
 │
-├── src/                          # Reusable Python code
-│   ├── __init__.py
-│   ├── utils.py                  # Utility functions (formatting, validation)
-│   └── s3_helper.py              # Helper for S3 operations
+├── lambda/                       # AWS Lambda function
+│   └── lambda_function.py        # Lambda function for daily ingestion
 │
 ├── docs/                         # Technical documentation
-│   ├── lambda_ingestion.md      # Lambda ingestion details
-│   ├── data_pipeline.md         # ELT pipeline details
-│   └── analytics_guide.md       # Guide for available analyses
+│   ├── lambda_ingestion.md       # Lambda ingestion details
+│   ├── data_pipeline.md          # ELT pipeline details
+│   └── analytics_guide.md        # Guide for available analyses
 │
-├── lambda_function.py            # Lambda function for daily ingestion
+├── requirements/                 # Python dependencies
+│   └── requirements.txt          # Project dependencies
 │
 ├── .gitignore                    # Git ignored files
-├── .env.example                  # Environment variables template
-├── requirements.txt              # Python dependencies
 ├── LICENSE                       # MIT License
 └── README.md                     # This file
 ```
@@ -213,7 +209,7 @@ aws events put-rule \
 ### 2️⃣ Processing on Databricks
 
 1. **Configure AWS credentials** on Databricks (via Secrets or IAM Role).
-2. **Execute notebook `notebooks/pipeline_principal.ipynb`** to create Bronze/Silver/Gold layers.
+2. **Execute notebook `notebooks/main_pipeline.ipynb`** to create Bronze/Silver/Gold layers.
 3. **Execute notebook `notebooks/analytics.ipynb`** for portability analysis.
 
 ### 3️⃣ Query Analytical Data

@@ -1,4 +1,5 @@
-# CVM 210 Data Pipeline
+# 📊 CVM 210 Data Pipeline | End-to-End Cloud Data Platform for Financial Analytics
+
 
 ![Project Banner](assets/images/project_banner.png)
 

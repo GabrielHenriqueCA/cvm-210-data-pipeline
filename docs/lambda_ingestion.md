@@ -1,87 +1,87 @@
-# Documentação da Ingestão - AWS Lambda
+# Ingestion Documentation - AWS Lambda
 
-## Visão Geral
+## Overview
 
-A função Lambda `lambda_function.py` é responsável pela **ingestão automatizada diária** dos dados da CVM Resolução 210, fazendo o download, descompactação e persistência no S3.
+The `lambda_function.py` Lambda function is responsible for the **automated daily ingestion** of CVM Resolution 210 data, handling download, decompression, and persistence in S3.
 
-## Processo de Ingestão
+## Ingestion Process
 
-### 1. Trigger Diário
+### 1. Daily Trigger
 
-A função é executada diariamente via **AWS EventBridge** (CloudWatch Events):
+The function runs daily via **AWS EventBridge** (CloudWatch Events):
 
 ```
 Trigger: cron(0 20 * * ? *)
-Frequência: Diária, às 20:00 UTC
-Alinhamento: Horário de publicação dos dados pela CVM
+Frequency: Daily, at 20:00 UTC
+Alignment: CVM data publication schedule
 ```
 
-### 2. Fluxo de Execução
+### 2. Execution Flow
 
 ```mermaid
 graph TD
-    A[Lambda Triggered] --> B[Define Data Atual]
-    B --> C{Tenta Mês Atual}
+    A[Lambda Triggered] --> B[Define Current Date]
+    B --> C{Try Current Month}
     C -->|200 OK| D[Download ZIP]
-    C -->|404| E[Tenta Mês Anterior]
+    C -->|404| E[Try Previous Month]
     E -->|200 OK| D
-    E -->|404| F[Retorna Erro 404]
-    D --> G[Descompacta ZIP em Memória]
-    G --> H[Extrai CSV]
-    H --> I[Upload para S3]
-    I --> J[Retorna Sucesso 200]
+    E -->|404| F[Return Error 404]
+    D --> G[Unzip in Memory]
+    G --> H[Extract CSV]
+    H --> I[Upload to S3]
+    I --> J[Return Success 200]
 ```
 
-### 3. Lógica de Busca do Arquivo Mais Recente
+### 3. Latest File Search Logic
 
-O código implementa uma **estratégia de fallback** para garantir que sempre capture o arquivo mais recente disponível:
+The code implements a **fallback strategy** to ensure it always captures the latest available file:
 
 ```python
-agora = datetime.now()
-datas_para_tentar = [agora, agora.replace(day=1) - timedelta(days=1)]
+now = datetime.now()
+dates_to_try = [now, now.replace(day=1) - timedelta(days=1)]
 ```
 
-**Cenários:**
-- **Dia 1-31 do mês**: Tenta o mês atual primeiro
-- **Se mês atual não disponível**: Busca o mês anterior
-- **Garante**: Sempre pega o arquivo mais recente publicado
+**Scenarios:**
+- **Day 1-31 of the month**: Tries the current month first.
+- **If current month is not available**: Searches for the previous month.
+- **Guarantee**: Always picks the most recently published file.
 
-### 4. URL de Download
+### 4. Download URL
 
 ```python
-url_cvm = f"https://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{ano}{mes}.zip"
+url_cvm = f"https://dados.cvm.gov.br/dados/FI/DOC/INF_DIARIO/DADOS/inf_diario_fi_{year}{month}.zip"
 ```
 
-**Exemplo:**
-- Janeiro/2026: `inf_diario_fi_202601.zip`
-- Dezembro/2025: `inf_diario_fi_202512.zip`
+**Example:**
+- January/2026: `inf_diario_fi_202601.zip`
+- December/2025: `inf_diario_fi_202512.zip`
 
-### 5. Processo de Descompactação
+### 5. Decompression Process
 
-A função **não salva o arquivo ZIP no S3**, apenas o **CSV descompactado**:
+The function **does not save the ZIP file in S3**, only the **extracted CSV**:
 
 ```python
-# Lê o ZIP direto na memória
+# Read ZIP directly into memory
 zip_buffer = io.BytesIO(response.read())
 
 with zipfile.ZipFile(zip_buffer) as z:
-    # Localiza o CSV dentro do ZIP
+    # Find the CSV inside the ZIP
     csv_name = [f for f in z.namelist() if f.endswith('.csv')][0]
     
-    # Extrai e faz upload direto
+    # Extract and upload directly
     with z.open(csv_name) as f:
         content = f.read()
         s3_client.put_object(Bucket=S3_BUCKET, Key=s3_key, Body=content)
 ```
 
-**Vantagens:**
-- ✅ Economiza espaço no S3 (não armazena ZIP desnecessário)
-- ✅ Processa em memória (rápido)
-- ✅ Dados já prontos para leitura do Databricks
+**Advantages:**
+- ✅ Saves space in S3 (no unnecessary ZIP storage).
+- ✅ Processes in memory (fast).
+- ✅ Data ready for Databricks consumption.
 
-### 6. Estrutura de Armazenamento no S3
+### 6. S3 Storage Structure
 
-Os dados são organizados com **particionamento por data**:
+Data is organized with **date-based partitioning**:
 
 ```
 s3://your-bucket-name/
@@ -96,56 +96,56 @@ s3://your-bucket-name/
             └── inf_diario_fi_202512.csv
 ```
 
-**Benefícios do Particionamento:**
-- 🚀 **Performance**: Leitura mais rápida ao filtrar por período
-- 📦 **Organização**: Fácil localização de dados históricos
-- 🔄 **Reprocessamento**: Possibilidade de reprocessar períodos específicos
+**Partitioning Benefits:**
+- 🚀 **Performance**: Faster reads when filtering by period.
+- 📦 **Organization**: Easy location of historical data.
+- 🔄 **Reprocessing**: Ability to reprocess specific periods.
 
-## Tratamento de Erros
+## Error Handling
 
-### Estratégia Implementada
+### Implemented Strategy
 
 ```python
 try:
     response = http.request('GET', url_cvm, preload_content=False)
     
     if response.status == 200:
-        # Processa arquivo
-        return {'statusCode': 200, 'body': f"Sucesso! CSV em: {s3_key}"}
+        # Process file
+        return {'statusCode': 200, 'body': f"Success! CSV at: {s3_key}"}
         
 except Exception as e:
-    print(f"Erro: {str(e)}")
+    print(f"Error: {str(e)}")
     continue
 
-return {'statusCode': 404, 'body': "Arquivo não encontrado."}
+return {'statusCode': 404, 'body': "File not found."}
 ```
 
-### Possíveis Erros
+### Possible Errors
 
-| Cenário | Status Code | Ação |
+| Scenario | Status Code | Action |
 |---------|-------------|------|
-| Arquivo encontrado | 200 | Processa e salva no S3 |
-| Arquivo não existe | 404 | Tenta mês anterior |
-| Erro de rede | Exception | Log de erro e continua |
-| ZIP corrompido | Exception | Log de erro |
+| File found | 200 | Processes and saves to S3 |
+| File does not exist | 404 | Tries previous month |
+| Network error | Exception | Log error and continue |
+| Corrupted ZIP | Exception | Log error |
 
-## Configuração e Deployment
+## Setup and Deployment
 
-### Variáveis de Ambiente
+### Environment Variables
 
 ```python
-S3_BUCKET = os.environ.get('S3_BUCKET')  # Configure na Lambda
-PASTA_BASE = "cvm-transactions-daily"
+S3_BUCKET = os.environ.get('S3_BUCKET')  # Configure in Lambda
+S3_PREFIX = "cvm-transactions-daily"
 ```
 
-### Dependências (requirements.txt)
+### Dependencies (requirements.txt)
 
 ```
 boto3==1.26.137
 urllib3==1.26.15
 ```
 
-### Permissões IAM Necessárias
+### Required IAM Permissions
 
 ```json
 {
@@ -168,42 +168,42 @@ urllib3==1.26.15
 }
 ```
 
-## Monitoramento
+## Monitoring
 
 ### CloudWatch Logs
 
-Logs automaticamente criados em:
+Logs are automatically created in:
 ```
 /aws/lambda/cvm210-daily-ingestion
 ```
 
-**Exemplo de log de sucesso:**
+**Example of success log:**
 ```
-Tentando: inf_diario_fi_202601.zip
-Sucesso! CSV descompactado em: cvm-transactions-daily/ano=2026/mes=01/inf_diario_fi_202601.csv
-```
-
-**Exemplo de log de erro:**
-```
-Tentando: inf_diario_fi_202601.zip
-Erro: HTTPError 404
-Tentando: inf_diario_fi_202512.zip
-Sucesso! CSV descompactado em: cvm-transactions-daily/ano=2025/mes=12/inf_diario_fi_202512.csv
+Attempting: inf_diario_fi_202601.zip
+Success! CSV decompressed to: cvm-transactions-daily/ano=2026/mes=01/inf_diario_fi_202601.csv
 ```
 
-## Melhorias Futuras
+**Example of error log:**
+```
+Attempting: inf_diario_fi_202601.zip
+Error: HTTPError 404
+Attempting: inf_diario_fi_202512.zip
+Success! CSV decompressed to: cvm-transactions-daily/ano=2025/mes=12/inf_diario_fi_202512.csv
+```
+
+## Future Improvements
 
 > [!TIP]
-> **Próximas Implementações**
+> **Next Implementations**
 
-- [ ] **Alertas SNS** em caso de falha de ingestão
-- [ ] **Validação do arquivo CSV** antes do upload (verificar colunas esperadas)
-- [ ] **Métricas customizadas** (tamanho do arquivo, tempo de processamento)
-- [ ] **Retry automático** com exponential backoff
-- [ ] **Dead Letter Queue (DLQ)** para erros críticos
+- [ ] **SNS Alerts** in case of ingestion failure.
+- [ ] **CSV File Validation** before upload (verify expected columns).
+- [ ] **Custom Metrics** (file size, processing time).
+- [ ] **Automatic Retry** with exponential backoff.
+- [ ] **Dead Letter Queue (DLQ)** for critical errors.
 
 ---
 
-## Código Completo
+## Full Code
 
-[Ver lambda_function.py](file:///c:/Users/Usuario/.gemini/antigravity/scratch/eng-dados-project/lambda_function.py)
+[View lambda_function.py](file:///c:/Users/Usuario/.gemini/antigravity/scratch/eng-dados-project/lambda/lambda_function.py)

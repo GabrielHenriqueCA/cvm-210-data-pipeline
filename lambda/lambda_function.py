@@ -26,7 +26,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 # Constants with defaults (can be overridden by environment variables)
-# ⚠️ IMPORTANTE: Configure essas variáveis de ambiente na AWS Lambda Console
+# ⚠️ IMPORTANT: Configure these environment variables in the AWS Lambda Console
 S3_BUCKET = os.environ.get('S3_BUCKET')
 if not S3_BUCKET:
     raise ValueError("S3_BUCKET environment variable is required!")

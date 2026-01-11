@@ -1,19 +1,19 @@
-# Pipeline de Dados - Arquitetura Medallion
+# Data Pipeline - Medallion Architecture
 
-## Visão Geral
+## Overview
 
-O pipeline de dados implementa a **Arquitetura Medallion** (Bronze → Silver → Gold) no Databricks, transformando dados brutos da CVM em informações analíticas prontas para consumo.
+The data pipeline implements the **Medallion Architecture** (Bronze → Silver → Gold) in Databricks, transforming raw CVM data into analysis-ready information.
 
-## Camadas de Dados
+## Data Layers
 
-### 🟤 Bronze Layer - Dados Brutos
+### 🟤 Bronze Layer - Raw Data
 
-#### Propósito
-- Ingestão de dados brutos diretamente do S3
-- Preservação histórica completa
-- Schema on read (sem validações)
+#### Purpose
+- Ingestion of raw data directly from S3.
+- Full historical preservation.
+- Schema on read (no validations).
 
-#### Implementação
+#### Implementation
 
 ```python
 df_bronze = (spark.read.format("csv")
@@ -29,44 +29,44 @@ df_bronze = (spark.read.format("csv")
     .load(path_bronze_csv)
 )
 
-# Salva como tabela Delta
+# Save as a Delta table
 df_bronze.write.format("delta") \
     .mode("overwrite") \
     .option("overwriteSchema", "true") \
     .saveAsTable("cvm_p210.bronze_inf_diario")
 ```
 
-#### Características
-- ✅ **Formato**: Delta Lake
-- ✅ **Schema**: Inferido automaticamente
-- ✅ **Encoding**: ISO-8859-1 (padrão CVM)
-- ✅ **Separador**: `;` (ponto e vírgula)
+#### Characteristics
+- ✅ **Format**: Delta Lake
+- ✅ **Schema**: Automatically inferred
+- ✅ **Encoding**: ISO-8859-1 (CVM standard)
+- ✅ **Delimiter**: `;` (semicolon)
 
 ---
 
-### ⚪ Silver Layer - Dados Limpos e Padronizados
+### ⚪ Silver Layer - Clean and Standardized Data
 
-#### Propósito
-- Limpeza e padronização de dados
-- Aplicação de regras de qualidade
-- Tratamento de evolução de schema
-- Deduplicação
+#### Purpose
+- Data cleaning and standardization.
+- Application of quality rules.
+- Handling schema evolution.
+- Deduplication.
 
-#### Transformações Aplicadas
+#### Transformations Applied
 
-##### 1. Tratamento de Colunas (Compatibilidade CVM 175)
+##### 1. Column Handling (CVM 175 Compatibility)
 
 ```python
-# Compatibilidade entre formatos antigo e novo da CVM
+# Compatibility between CVM legacy and new formats
 df_silver = df_bronze.withColumn(
     "CNPJ_FUNDO",
     coalesce(col("CNPJ_FUNDO"), col("cnpj_fundo"))
 )
 ```
 
-**Motivo:** A CVM alterou padrão de nomenclatura em algumas publicações.
+**Reason:** CVM changed its naming standard in some publications.
 
-##### 2. Conversão de Tipos de Dados
+##### 2. Data Type Conversion
 
 ```python
 df_silver = df_silver \
@@ -78,7 +78,7 @@ df_silver = df_silver \
     .withColumn("RESG_DIA", col("RESG_DIA").cast("double"))
 ```
 
-##### 3. Enriquecimento de Dados
+##### 3. Data Enrichment
 
 ```python
 df_silver = df_silver \
@@ -87,20 +87,20 @@ df_silver = df_silver \
     .withColumn("dh_processamento_silver", current_timestamp())
 ```
 
-**Metadados adicionados:**
-- `ano`: Particionamento
-- `mes`: Particionamento
-- `dh_processamento_silver`: Rastreabilidade
+**Added Metadata:**
+- `ano`: Partitioning (Year)
+- `mes`: Partitioning (Month)
+- `dh_processamento_silver`: Traceability
 
-##### 4. Data Quality - Filtros
+##### 4. Data Quality - Filters
 
 ```python
 df_silver = df_silver.filter("VL_PATRIM_LIQ > 0")
 ```
 
-**Regra:** Remove registros com patrimônio líquido inválido.
+**Rule:** Removes records with invalid Net Asset Value (NAV).
 
-#### Estratégia de Merge (Deduplicação)
+#### Merge Strategy (Deduplication)
 
 ```python
 if DeltaTable.isDeltaTable(spark, "cvm_p210.silver_inf_diario"):
@@ -118,28 +118,28 @@ else:
         .saveAsTable("cvm_p210.silver_inf_diario")
 ```
 
-**Garantia:** Não há duplicatas para o mesmo `CNPJ_FUNDO + DT_COMPTC`.
+**Guarantee:** No duplicates for the same `CNPJ_FUNDO + DT_COMPTC`.
 
-#### Otimização
+#### Optimization
 
 ```sql
 OPTIMIZE cvm_p210.silver_inf_diario ZORDER BY (CNPJ_FUNDO)
 ```
 
-**Benefício:** Consultas filtradas por CNPJ_FUNDO são até **10x mais rápidas**.
+**Benefit:** Queries filtered by `CNPJ_FUNDO` are up to **10x faster**.
 
 ---
 
-### 🟡 Gold Layer - Dados Analíticos
+### 🟡 Gold Layer - Analytical Data
 
-#### Propósito
-- Agregações por fundo e período
-- Cálculo de KPIs de negócio
-- Dados prontos para BI e análises
+#### Purpose
+- Aggregations by fund and period.
+- Business KPI calculation.
+- Data ready for BI and analytics.
 
-#### Regras de Negócio Implementadas
+#### Implemented Business Rules
 
-##### 1. Agregações Base
+##### 1. Base Aggregations
 
 ```python
 df_gold_base = df_silver.groupBy("CNPJ_FUNDO", "ano", "mes").agg(
@@ -152,7 +152,7 @@ df_gold_base = df_silver.groupBy("CNPJ_FUNDO", "ano", "mes").agg(
 )
 ```
 
-##### 2. KPIs Calculados
+##### 2. Calculated KPIs
 
 ```python
 df_gold_insights = df_gold_base \
@@ -162,13 +162,13 @@ df_gold_insights = df_gold_base \
                 round(((col("cota_maxima") - col("cota_minima")) / col("cota_minima")) * 100, 2))
 ```
 
-**KPIs Criados:**
-- **Fluxo Líquido**: Indica se houve entrada ou saída de capital
-  - `> 0`: Captação líquida (positivo para o fundo)
-  - `< 0`: Resgate líquido (portabilidade de saída)
-- **Variação de Cota**: Performance do fundo no período
+**KPIs Created:**
+- **Net Flow (Fluxo Líquido)**: Indicates whether there was a capital inflow or outflow.
+  - `> 0`: Net inflow (positive for the fund).
+  - `< 0`: Net outflow (portability outflow).
+- **Quota Variation**: Fund performance over the period.
 
-##### 3. Metadados Analíticos
+##### 3. Analytical Metadata
 
 ```python
 df_gold_insights = df_gold_insights \
@@ -176,7 +176,7 @@ df_gold_insights = df_gold_insights \
     .withColumn("versao_pipeline", lit("1.0"))
 ```
 
-#### Escrita na Camada Gold
+#### Writing to the Gold Layer
 
 ```python
 df_gold_insights.write.format("delta") \
@@ -186,11 +186,11 @@ df_gold_insights.write.format("delta") \
 
 ---
 
-## Governança e Metadados
+## Governance and Metadata
 
 ### Unity Catalog
 
-Todas as tabelas são criadas no **Unity Catalog** do Databricks:
+All tables are created in the Databricks **Unity Catalog**:
 
 ```
 Catalog: cvm_p210
@@ -199,24 +199,24 @@ Catalog: cvm_p210
 └── gold_cvm210_analytics
 ```
 
-**Benefícios:**
-- 📚 **Catálogo centralizado** de metadados
-- 🔒 **Controle de acesso** granular
-- 📊 **Data lineage** automático
+**Benefits:**
+- 📚 **Centralized metadata catalog**.
+- 🔒 **Granular access control**.
+- 📊 **Automatic data lineage**.
 
-### Versionamento (Delta Lake)
+### Versioning (Delta Lake)
 
 #### Time Travel
 
 ```sql
--- Ver versão anterior da tabela
+-- View a previous version of the table
 SELECT * FROM cvm_p210.silver_inf_diario VERSION AS OF 5
 
--- Ver tabela em data específica
+-- View the table as of a specific timestamp
 SELECT * FROM cvm_p210.silver_inf_diario TIMESTAMP AS OF '2026-01-10'
 ```
 
-#### Histórico de Versões
+#### Version History
 
 ```sql
 DESCRIBE HISTORY cvm_p210.silver_inf_diario
@@ -224,53 +224,53 @@ DESCRIBE HISTORY cvm_p210.silver_inf_diario
 
 ---
 
-## Execução do Pipeline
+## Pipeline Execution
 
-### Ordem de Execução
+### Execution Order
 
-1. **Bronze**: Ingestão de dados brutos do S3
-2. **Silver**: Limpeza, padronização e merge
-3. **Gold**: Agregações e cálculo de KPIs
+1. **Bronze**: Raw data ingestion from S3.
+2. **Silver**: Cleaning, standardization, and merge.
+3. **Gold**: Aggregations and KPI calculations.
 
-### Idempotência
+### Idempotency
 
-O pipeline é **idempotente**:
-- Múltiplas execuções do mesmo período **não criam duplicatas**
-- Merge garante `UPSERT` (atualiza se existe, insere se não existe)
+The pipeline is **idempotent**:
+- Multiple executions for the same period **do not create duplicates**.
+- Merge ensures `UPSERT` behavior (updates if exists, inserts if not).
 
 ---
 
-## Monitoramento e Qualidade
+## Monitoring and Quality
 
 ### Data Quality Checks
 
-| Check | Descrição | Ação |
+| Check | Description | Action |
 |-------|-----------|------|
-| Patrimônio > 0 | Valida patrimônio líquido positivo | Remove registros inválidos |
-| Campos obrigatórios | CNPJ_FUNDO, DT_COMPTC não nulos | Garantido pela merge key |
-| Duplicatas | Chave (CNPJ + Data) única | Merge evita duplicação |
+| NAV > 0 | Validates positive Net Asset Value | Removes invalid records |
+| Mandatory fields | CNPJ_FUNDO, DT_COMPTC non-null | Guaranteed by merge key |
+| Duplicates | Unique key (CNPJ + Date) | Merge prevents duplication |
 
-### Logs de Processamento
+### Processing Logs
 
-Cada camada registra timestamp de processamento:
-- `dh_processamento_silver`: Quando foi processado na Silver
-- `dh_geracao_analytics`: Quando foi gerado na Gold
+Each layer records a processing timestamp:
+- `dh_processamento_silver`: When processed in the Silver layer.
+- `dh_geracao_analytics`: When generated in the Gold layer.
 
 ---
 
-## Próximas Melhorias
+## Future Improvements
 
 > [!NOTE]
-> **Evolução do Pipeline**
+> **Pipeline Evolution**
 
-- [ ] **Validação de schema** antes da ingestão
-- [ ] **Alertas de Data Quality** (ex: SNS quando patrimônio médio cai muito)
-- [ ] **Métricas de pipeline** (tempo de execução, volume de dados)
-- [ ] **Testes automatizados** (Great Expectations)
-- [ ] **Orquestração completa** (Databricks Workflows ou Airflow)
+- [ ] **Schema validation** before ingestion.
+- [ ] **Data Quality Alerts** (e.g., SNS notification when average assets drop significantly).
+- [ ] **Pipeline metrics** (execution time, processed volume).
+- [ ] **Automated tests** (Great Expectations).
+- [ ] **Full orchestration** (Databricks Workflows or Airflow).
 
 ---
 
-## Código Completo
+## Full Code
 
-[Ver notebook_principal.ipynb](file:///c:/Users/Usuario/.gemini/antigravity/scratch/eng-dados-project/notebook_principal.ipynb)
+[View pipeline_principal.ipynb](file:///c:/Users/Usuario/.gemini/antigravity/scratch/eng-dados-project/notebooks/pipeline_principal.ipynb)

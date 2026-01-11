@@ -1,199 +1,200 @@
-# 🔧 Como Usar Variáveis de Ambiente no Projeto
+# 🔧 How to Use Environment Variables in the Project
 
-Este guia explica como configurar e usar variáveis de ambiente de forma segura.
+This guide explains how to configure and use environment variables securely.
 
 ---
 
-## 📋 Setup Inicial (Uma Vez)
+## 📋 Initial Setup (One-Time)
 
-### 1️⃣ Copiar o Template
+### 1️⃣ Copy the Template
 
 ```bash
-# No diretório raiz do projeto
+# In the project root directory
 cp .env.example .env
 ```
 
-### 2️⃣ Preencher com Suas Credenciais
+### 2️⃣ Fill with Your Credentials
 
-Edite o arquivo `.env` e substitua os valores:
+Edit the `.env` file and replace the values:
 
 ```bash
-# .env (seu arquivo privado)
-AWS_ACCESS_KEY_ID=sua_access_key_aqui
-AWS_SECRET_ACCESS_KEY=sua_secret_key_aqui
-S3_BUCKET_NAME=seu-bucket-s3
+# .env (your private file)
+AWS_ACCESS_KEY_ID=your_access_key_here
+AWS_SECRET_ACCESS_KEY=your_secret_key_here
+S3_BUCKET_NAME=your-s3-bucket
 # ... etc
 ```
 
-⚠️ **IMPORTANTE**: O arquivo `.env` já está no `.gitignore` e NÃO será commitado!
+> [!WARNING]
+> **IMPORTANT**: The `.env` file is already in `.gitignore` and WILL NOT be committed!
 
 ---
 
-## 🐍 Uso em Python (Scripts Locais)
+## 🐍 Python Usage (Local Scripts)
 
-### Instalação
+### Installation
 
 ```bash
 pip install python-dotenv
 ```
 
-### Código de Exemplo
+### Example Code
 
 ```python
 # local_script.py
 import os
 from dotenv import load_dotenv
 
-# Carregar variáveis do arquivo .env
+# Load variables from .env file
 load_dotenv()
 
-# Usar as variáveis
+# Use the variables
 aws_key = os.getenv('AWS_ACCESS_KEY_ID')
 aws_secret = os.getenv('AWS_SECRET_ACCESS_KEY')
 bucket_name = os.getenv('S3_BUCKET_NAME')
 
-print(f"Usando bucket: {bucket_name}")
+print(f"Using bucket: {bucket_name}")
 ```
 
 ---
 
-## ☁️ Uso em AWS Lambda
+## ☁️ AWS Lambda Usage
 
-### Configuração
+### Configuration
 
-**NÃO** use arquivo `.env` na Lambda. Configure via **AWS Console**:
+**DO NOT** use a `.env` file in Lambda. Configure via **AWS Console**:
 
-1. AWS Lambda Console → Sua função
-2. Configuration → Environment variables
-3. Adicionar variáveis:
-   - `S3_BUCKET` = `seu-bucket-name`
+1. AWS Lambda Console → Your function.
+2. Configuration → Environment variables.
+3. Add variables:
+   - `S3_BUCKET` = `your-bucket-name`
    - `S3_PREFIX` = `cvm-transactions-daily`
 
-### Código Lambda
+### Lambda Code
 
 ```python
 # lambda_function.py
 import os
 
-# Lambda automaticamente carrega variáveis de ambiente
+# Lambda automatically loads environment variables
 S3_BUCKET = os.environ.get('S3_BUCKET')
 if not S3_BUCKET:
     raise ValueError("S3_BUCKET environment variable is required!")
 
-# Use normalmente
-print(f"Usando bucket: {S3_BUCKET}")
+# Use normally
+print(f"Using bucket: {S3_BUCKET}")
 ```
 
 ---
 
-## 📊 Uso em Databricks
+## 📊 Databricks Usage
 
-### ⚠️ NÃO use .env no Databricks!
+### ⚠️ DO NOT use .env in Databricks!
 
-Use **Databricks Secrets** ao invés disso.
+Use **Databricks Secrets** instead.
 
-### Setup Databricks Secrets
+### Databricks Secrets Setup
 
 ```bash
-# Criar scope
+# Create scope
 databricks secrets create-scope --scope aws-credentials
 
-# Adicionar secrets
+# Add secrets
 databricks secrets put --scope aws-credentials --key access-key
 databricks secrets put --scope aws-credentials --key bucket-name
 ```
 
-### Código Notebook
+### Notebook Code
 
 ```python
-# No Databricks Notebook
+# In a Databricks Notebook
 access_key = dbutils.secrets.get(scope="aws-credentials", key="access-key")
 bucket_name = dbutils.secrets.get(scope="aws-credentials", key="bucket-name")
 
-# Configurar Spark
+# Configure Spark
 spark.conf.set("fs.s3a.access.key", access_key)
 ```
 
 ---
 
-## 🔍 Verificação
+## 🔍 Verification
 
-### Verificar se .env está sendo ignorado
+### Check if .env is being ignored
 
 ```bash
 git status
 
-# .env NÃO deve aparecer na lista
-# Se aparecer, verifique seu .gitignore
+# .env SHOULD NOT appear in the list
+# If it does, check your .gitignore
 ```
 
-### Verificar se variáveis carregaram
+### Check if variables are loaded
 
 ```python
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
-print(os.getenv('S3_BUCKET_NAME'))  # Deve mostrar seu bucket
+print(os.getenv('S3_BUCKET_NAME'))  # Should show your bucket name
 ```
 
 ---
 
-## 🛡️ Checklist de Segurança
+## 🛡️ Security Checklist
 
-- [ ] `.env.example` tem apenas placeholders (sem credenciais reais)
-- [ ] `.env` está no `.gitignore`
-- [ ] `.env` não aparece no `git status`
-- [ ] Credenciais reais apenas no `.env` local (nunca commit)
-- [ ] Lambda usa variáveis de ambiente via Console
-- [ ] Databricks usa Secrets (não .env)
-
----
-
-## 📁 Estrutura Recomendada
-
-```
-projeto/
-├── .env.example          # ✅ Template (commitado no Git)
-├── .env                  # ❌ Privado (NÃO commitado)
-├── .gitignore            # ✅ Contém ".env"
-└── seu_script.py         # ✅ Usa load_dotenv()
-```
+- [ ] `.env.example` has only placeholders (no real credentials).
+- [ ] `.env` is in `.gitignore`.
+- [ ] `.env` does not appear in `git status`.
+- [ ] Real credentials only in the local `.env` (never commit).
+- [ ] Lambda uses environment variables via Console.
+- [ ] Databricks uses Secrets (not .env).
 
 ---
 
-## 🚨 Se Você Commitou .env Por Engano
+## 📁 Recommended Structure
 
-### Remover do histórico Git
+```
+project/
+├── .env.example          # ✅ Template (committed to Git)
+├── .env                  # ❌ Private (NOT committed)
+├── .gitignore            # ✅ Contains ".env"
+└── your_script.py        # ✅ Uses load_dotenv()
+```
+
+---
+
+## 🚨 If You Committed .env by Mistake
+
+### Remove from Git history
 
 ```bash
-# Remover arquivo
+# Remove file from cache
 git rm --cached .env
 
-# Commit a remoção
+# Commit the removal
 git commit -m "Remove .env file"
 
-# Limpar histórico (se já deu push)
+# Clean history (if you already pushed)
 git filter-branch --force --index-filter \
   "git rm --cached --ignore-unmatch .env" \
   --prune-empty --tag-name-filter cat -- --all
 
-# Force push (CUIDADO!)
+# Force push (CAUTION!)
 git push origin --force --all
 ```
 
-### Revogar Credenciais
+### Revoke Credentials
 
-Se credenciais foram expostas, **revogue imediatamente**:
+If credentials were exposed, **revoke them immediately**:
 
-1. AWS IAM Console → Users → Security Credentials
-2. Delete Access Key
-3. Gere novas credenciais
-4. Atualize seu `.env` local
+1. AWS IAM Console → Users → Security Credentials.
+2. Delete Access Key.
+3. Generate new credentials.
+4. Update your local `.env`.
 
 ---
 
-## 📚 Referências
+## 📚 References
 
 - [python-dotenv Documentation](https://github.com/theskumar/python-dotenv)
 - [AWS Lambda Environment Variables](https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html)

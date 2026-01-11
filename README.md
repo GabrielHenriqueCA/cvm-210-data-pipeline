@@ -9,52 +9,65 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
 [![Code Style](https://img.shields.io/badge/Code%20Style-Black-black?style=for-the-badge)](https://github.com/psf/black)
 
-## 📑 Índice
+## 📑 Table of Contents
 
-- [Visão Geral](#-visão-geral)
-- [Objetivos do Projeto](#-objetivos-do-projeto)
-- [Arquitetura da Solução](#%EF%B8%8F-arquitetura-da-solução)
-- [Tecnologias Utilizadas](#-tecnologias-utilizadas)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Como Executar](#-como-executar)
-- [Exemplos de Análises](#-exemplos-de-análises)
-- [Governança e Qualidade](#-regras-de-negócio--governança)
-- [Otimização de Custos](#-otimização-de-custos)
-- [Métricas de Performance](#-métricas-de-performance)
+- [Overview](#-overview)
+- [TL;DR](#-tldr)
+- [Project Objectives](#-project-objectives)
+- [Solution Architecture](#%EF%B8%8F-solution-architecture)
+- [Technologies Used](#-technologies-used)
+- [Project Structure](#-project-structure)
+- [How to Run](#-how-to-run)
+- [Analysis Examples](#-analysis-examples)
+- [Business Rules & Governance](#-business-rules--governance)
+- [Cost Optimization](#-cost-optimization-executive-summary)
+- [Performance Metrics](#-performance-metrics)
+- [Key Generated Insights](#-key-generated-insights)
+- [Technical Decisions](#-technical-decisions)
 - [Troubleshooting](#-troubleshooting)
-- [Próximos Passos](#-próximos-passos)
-- [Diferenciais do Projeto](#-diferenciais-do-projeto)
-- [Sobre o Autor](#-sobre-o-autor)
-- [Licença](#-licença)
+- [Next Steps](#-next-steps)
+- [Project Highlights](#-project-highlights)
+- [About the Author](#-about-the-author)
+- [License](#-license)
 
 ---
 
-## 📌 Visão Geral
+## 📌 Overview
 
-Este projeto implementa uma **solução completa de engenharia de dados** para capturar, processar e analisar informações públicas da **CVM (Resolução CVM 210)**, simulando um cenário real de mercado onde não há API oficial disponível para consumo direto dos dados regulatórios.
+This project implements a **complete data engineering solution** to capture, process, and analyze public information from the **CVM (Resolution CVM 210)**, simulating a real market scenario where no official API is available for direct consumption of regulatory data.
 
 > [!IMPORTANT]
-> **Contexto Regulatório**: Embora a CVM disponibilize dados públicos em seu portal, **as informações da Resolução CVM 210 (portabilidade de investimentos) são de acesso restrito** e não estão disponíveis publicamente. Este projeto demonstra a capacidade de construir uma arquitetura robusta para captura e análise desses dados em um ambiente corporativo real.
+> **Regulatory Context**: Although the CVM provides public data on its portal, **information from CVM Resolution 210 (investment portability) is of restricted access** and is not publicly available. This project demonstrates the ability to build a robust architecture for capturing and analyzing such data in a real corporate environment.
 
-A proposta foi resolver um problema real de negócio, desde a **ingestão automatizada** até a **análise estratégica**, utilizando uma arquitetura moderna em cloud (**AWS + Databricks**) e boas práticas de Data Engineering em produção.
-
----
-
-## 🎯 Objetivos do Projeto
-
-✅ **Automatizar a captura diária** dos dados publicados pela CVM  
-✅ **Garantir persistência, histórico e rastreabilidade** das informações  
-✅ **Transformar dados brutos em informação analítica confiável**  
-✅ **Viabilizar análises de portabilidade e movimentação de fundos**  
-✅ **Criar uma base escalável** para estratégias financeiras futuras
+The goal was to solve a real business problem, from **automated ingestion** to **strategic analysis**, using a modern cloud architecture (**AWS + Databricks**) and best practices for production-level Data Engineering.
 
 ---
 
-## 🏗️ Arquitetura da Solução
+## 🚀 TL;DR
+
+- **Daily automated ingestion** of CVM 210 data via AWS Lambda
+- **Cloud Data Lake** on Amazon S3
+- **ELT processing** on Databricks with Medallion Architecture
+- **Delta Lake** with schema evolution, time travel, and ACID compliance
+- **Business analytics** focused on fund portability and risk detection
+
+---
+
+## 🎯 Project Objectives
+
+✅ **Automate daily capture** of data published by CVM  
+✅ **Ensure persistence, history, and traceability** of information  
+✅ **Transform raw data into reliable analytical information**  
+✅ **Enable portability analysis and fund movement detection**  
+✅ **Create a scalable base** for future financial strategies  
+
+---
+
+## 🏗️ Solution Architecture
 
 ![Architecture Diagram](assets/images/architecture_diagram.png)
 
-### Fluxo Completo de Dados
+### Complete Data Flow
 
 ```mermaid
 graph TB
@@ -80,108 +93,110 @@ graph TB
     style J fill:#f0e1ff,stroke:#9966cc,stroke-width:2px,stroke-dasharray: 5 5
 ```
 
-> **Legenda**: Componentes com borda tracejada e setas pontilhadas representam funcionalidades planejadas (Future State).
+> **Legend**: Components with dashed borders and dotted arrows represent planned features (Future State).
 
-### 🔹 Ingestão de Dados
+### 🔹 Data Ingestion
 
-- **Execução diária via AWS Lambda**, alinhada ao horário de publicação da CVM
-- **Extração direta do site da CVM** (simulando ingestão via API de instituições autorizadas)
-- **Geração de arquivos diários no Amazon S3** (Data Lake – Raw Zone)
-- **Descompactação automática** de arquivos ZIP para CSV
+- **Daily execution via AWS Lambda**, aligned with CVM publication schedule.
+- **Direct extraction from CVM website** (simulating ingestion via authorized institution API).
+- **Generation of daily files in Amazon S3** (Data Lake – Raw Zone).
+- **Automatic decompression** of ZIP files to CSV.
 
-### 🔹 Armazenamento
+### 🔹 Storage
 
-- **Organização dos dados no S3** com separação lógica por data (`ano=YYYY/mes=MM/`)
-- **Persistência histórica** para auditoria e reprocessamento
-- **Base preparada para schema evolution**
+- **Data organization in S3** with logical partitioning by date (`ano=YYYY/mes=MM/`).
+- **Historical persistence** for auditing and reprocessing.
+- **Base prepared for schema evolution**.
 
-### 🔄 Processamento & Transformação (ELT)
+### 🔄 Processing & Transformation (ELT)
 
-**Arquitetura Medallion implementada no Databricks:**
+**Medallion Architecture implemented on Databricks:**
 
 ![Medallion Flow](assets/images/medallion_flow.png)
 
 #### **Bronze Layer** 🟤
-- Dados brutos ingeridos diretamente do S3
-- Schema on read
-- Sem transformações
-- Histórico completo preservado
+- Raw data ingested directly from S3.
+- Schema on read.
+- No transformations.
+- Full history preserved.
 
 #### **Silver Layer** ⚪
-- **Limpeza e padronização** de dados
-- **Tratamento de colunas** (compatibilidade CVM 175 vs formato antigo)
-- **Validações de Data Quality** (valores válidos, campos obrigatórios)
-- **Deduplicação** via merge (garantia de não duplicidade)
-- **Schema evolution** automático
-- **Z-Order optimization** por CNPJ_FUNDO
+- **Cleaning and standardization** of data.
+- **Column handling** (compatibility between CVM 175 vs legacy formats).
+- **Data Quality validations** (valid values, mandatory fields).
+- **Deduplication** via merge (guaranteeing no duplicates).
+- **Automatic schema evolution**.
+- **Z-Order optimization** by CNPJ_FUNDO.
 
 #### **Gold Layer** 🟡
-- **Agregações por fundo e período**
-- **KPIs de negócio calculados:**
-  - Total de captações
-  - Total de resgates
-  - **Fluxo líquido** (captação - resgate)
-  - Patrimônio médio
-  - Variação de cota
-  - **Indicadores de portabilidade**
-- **Dados prontos para BI e análises**
-
-### 🔧 Tecnologias Utilizadas
-
-| Camada | Tecnologia | Propósito |
-|--------|-----------|-----------|
-| **Ingestão** | AWS Lambda + Python | Automação de captura diária |
-| **Storage** | Amazon S3 | Data Lake (Raw Zone) |
-| **Processing** | Databricks + PySpark | Processamento distribuído |
-| **Data Format** | Delta Lake | Versionamento, ACID, Time Travel |
-| **Orchestration** | AWS EventBridge (trigger diário) | Agendamento |
-| **Governance** | Unity Catalog | Catálogo de metadados |
+- **Aggregations by fund and period**.
+- **Calculated Business KPIs:**
+  - Total inflows
+  - Total outflows
+  - **Net flow** (inflow - outflow)
+  - Average NAV (Net Asset Value)
+  - Net Asset Value variation
+  - **Portability indicators**
+- **Data ready for BI and analytics**.
 
 ---
 
-## 📂 Estrutura do Projeto
+## 🔧 Technologies Used
+
+| Layer | Technology | Purpose |
+|--------|-----------|-----------|
+| **Ingestion** | AWS Lambda + Python | Automated daily capture |
+| **Storage** | Amazon S3 | Data Lake (Raw Zone) |
+| **Processing** | Databricks + PySpark | Distributed processing |
+| **Data Format** | Delta Lake | Versioning, ACID, Time Travel |
+| **Orchestration** | AWS EventBridge (daily trigger) | Scheduling |
+| **Governance** | Unity Catalog | Metadata catalog |
+
+---
+
+## 📂 Project Structure
 
 ```
 eng-dados-project/
 │
 ├── assets/
-│   └── images/                   # Imagens do projeto (banner, diagramas)
+│   └── images/                   # Project images (banner, diagrams)
 │       ├── project_banner.png
 │       ├── architecture_diagram.png
 │       └── medallion_flow.png
 │
 ├── notebooks/                     # Jupyter Notebooks
-│   ├── pipeline_principal.ipynb  # Pipeline completo (Bronze → Silver → Gold)
-│   ├── data_processing.ipynb     # Processamento e transformações
-│   └── analytics.ipynb           # Análises de portabilidade e insights
+│   ├── pipeline_principal.ipynb  # Main pipeline (Bronze → Silver → Gold)
+│   ├── data_processing.ipynb     # Processing and transformations
+│   └── analytics.ipynb           # Portability analysis and insights
 │
-├── src/                          # Código Python reutilizável
+├── src/                          # Reusable Python code
 │   ├── __init__.py
-│   ├── utils.py                  # Funções utilitárias (formatação, validação)
-│   └── s3_helper.py              # Helper para operações S3
+│   ├── utils.py                  # Utility functions (formatting, validation)
+│   └── s3_helper.py              # Helper for S3 operations
 │
-├── docs/                         # Documentação técnica
-│   ├── lambda_ingestion.md      # Detalhes da ingestão Lambda
-│   ├── data_pipeline.md         # Detalhes do pipeline ELT
-│   └── analytics_guide.md       # Guia de análises disponíveis
+├── docs/                         # Technical documentation
+│   ├── lambda_ingestion.md      # Lambda ingestion details
+│   ├── data_pipeline.md         # ELT pipeline details
+│   └── analytics_guide.md       # Guide for available analyses
 │
-├── lambda_function.py            # Função Lambda para ingestão diária
+├── lambda_function.py            # Lambda function for daily ingestion
 │
-├── .gitignore                    # Arquivos ignorados pelo Git
-├── .env.example                  # Template de variáveis de ambiente
-├── requirements.txt              # Dependências Python
-├── LICENSE                       # Licença MIT
-└── README.md                     # Este arquivo
+├── .gitignore                    # Git ignored files
+├── .env.example                  # Environment variables template
+├── requirements.txt              # Python dependencies
+├── LICENSE                       # MIT License
+└── README.md                     # This file
 ```
 
 ---
 
-## 🚀 Como Executar
+## 🚀 How to Run
 
-### 1️⃣ Configuração da Ingestão (AWS Lambda)
+### 1️⃣ Ingestion Setup (AWS Lambda)
 
 ```bash
-# Deploy da função Lambda
+# Deploy Lambda function
 aws lambda create-function \
   --function-name cvm210-daily-ingestion \
   --runtime python3.9 \
@@ -189,22 +204,22 @@ aws lambda create-function \
   --handler lambda_function.lambda_handler \
   --zip-file fileb://lambda_function.zip
 
-# Configurar trigger diário (EventBridge)
+# Configure daily trigger (EventBridge)
 aws events put-rule \
   --name cvm210-daily-trigger \
   --schedule-expression "cron(0 20 * * ? *)"
 ```
 
-### 2️⃣ Processamento no Databricks
+### 2️⃣ Processing on Databricks
 
-1. **Configurar credenciais AWS** no Databricks (via Secrets ou IAM Role)
-2. **Executar notebook `notebooks/pipeline_principal.ipynb`** para criar as camadas Bronze/Silver/Gold
-3. **Executar notebook `notebooks/analytics.ipynb`** para análises de portabilidade
+1. **Configure AWS credentials** on Databricks (via Secrets or IAM Role).
+2. **Execute notebook `notebooks/pipeline_principal.ipynb`** to create Bronze/Silver/Gold layers.
+3. **Execute notebook `notebooks/analytics.ipynb`** for portability analysis.
 
-### 3️⃣ Consultar Dados Analíticos
+### 3️⃣ Query Analytical Data
 
 ```sql
--- Exemplo: Fundos com maior saída de capital (portabilidade)
+-- Example: Funds with highest capital outflow (portability)
 SELECT 
   CNPJ_FUNDO,
   total_captacao,
@@ -219,73 +234,73 @@ LIMIT 10;
 
 ---
 
-## 📊 Exemplos de Análises
+## 📊 Analysis Examples
 
-### Análise de Portabilidade
+### Portability Analysis
 
-O projeto gera **insights acionáveis** para o time de negócios:
+The project generates **actionable insights** for the business team:
 
-- **Fundos em risco** (com fluxo líquido negativo)
-- **Volume total movimentado** por tipo de portabilidade
-- **Tendências de captação vs resgate**
+- **Funds at risk** (with negative net flow)
+- **Total volume moved** by portability type
+- **Inflow vs Outflow trends**
 
-**Exemplo de output:**
+**Output Example:**
 
-| CNPJ_FUNDO | Total Captação | Total Resgate | Fluxo Líquido | Patrimônio Médio |
-|------------|----------------|---------------|---------------|------------------|
+| CNPJ_FUNDO | Total Inflow | Total Outflow | Net Flow | Average NAV |
+|------------|--------------|---------------|----------|-------------|
 | 12.345.678 | R$ 1.2M | R$ 2.5M | **-R$ 1.3M** | R$ 450M |
 | 23.456.789 | R$ 800K | R$ 1.1M | **-R$ 300K** | R$ 120M |
 
 ---
 
-## 🧠 Regras de Negócio & Governança
+## 🧠 Business Rules & Governance
 
 ### Data Quality
-- ✅ Validação de **campos obrigatórios** (CNPJ_FUNDO, DT_COMPTC)
-- ✅ Filtro de **patrimônio líquido > 0**
-- ✅ **Deduplicação automática** via merge
+- ✅ Validation of **mandatory fields** (CNPJ_FUNDO, DT_COMPTC)
+- ✅ Filtering of **Net Asset Value > 0**
+- ✅ **Automatic deduplication** via merge
 
-### Metadados e Rastreabilidade
-- ✅ Timestamp de processamento em cada camada
-- ✅ Particionamento por **ano/mês**
-- ✅ Versionamento via **Delta Lake**
+### Metadata and Traceability
+- ✅ Processing timestamp in each layer
+- ✅ Partitioning by **year/month**
+- ✅ Versioning via **Delta Lake**
 
-### Segurança & Governança
-- 🔒 **Credenciais AWS**: IAM Roles via Instance Profile (production-ready)
-- 🔒 **Armazenamento**: Unity Catalog para controle de acesso
-- 🔒 **Auditoria**: Delta Lake transaction log para rastreabilidade completa
-- 🔒 **Versionamento**: Time Travel habilitado para rollback
-- 🔒 **Data Lineage**: Rastreamento automático de transformações
+### Security & Governance
+- 🔒 **AWS Credentials**: IAM Roles via Instance Profile (production-ready)
+- 🔒 **Storage**: Unity Catalog for access control
+- 🔒 **Auditing**: Delta Lake transaction log for full traceability
+- 🔒 **Versioning**: Time Travel enabled for rollbacks
+- 🔒 **Data Lineage**: Automatic tracking of transformations
 
 ---
 
-## 💰 Otimização de Custos (Resumo Executivo)
+## 💰 Cost Optimization (Executive Summary)
 
 💰 **Estimated annual savings**: For 10,000 queries/year, savings of **~$137** (from $172 to $35).
 
-Este ganho foi obtido principalmente através de:
-- **Uso de formatos colunares (Parquet)**: Redução drástica na quantidade de dados lidos.
-- **Compressão Snappy**: Equilíbrio perfeito entre taxa de compressão e velocidade de leitura.
-- **Arquitetura Medallion**: Redução de scans desnecessários ao consultar camadas refinadas.
-- **Processamento Serverless / Sob Demanda**: Uso eficiente de AWS Lambda e clusters Databricks com auto-termination.
+This gain was achieved mainly through:
+- **Use of Columnar Formats (Parquet)**: Drastic reduction in the amount of data read.
+- **Snappy Compression**: Perfect balance between compression ratio and read speed.
+- **Medallion Architecture**: Reduction of unnecessary scans by querying refined layers.
+- **Serverless / On-Demand Processing**: Efficient use of AWS Lambda and Databricks clusters with auto-termination.
 
 ---
 
-## 📊 Métricas de Performance
+## 📊 Performance Metrics
 
-### Pipeline de Ingestão (Lambda)
-| Métrica | Valor Típico |
+### Ingestion Pipeline (Lambda)
+| Metric | Typical Value |
 |---------|--------------|
-| **Execution Time** | ~15-25 segundos |
+| **Execution Time** | ~15-25 seconds |
 | **Memory Used** | ~300-400 MB |
 | **Data Downloaded** | ~800 MB - 1.2 GB |
-| **Upload to S3** | ~5-8 segundos |
+| **Upload to S3** | ~5-8 seconds |
 
-### Pipeline de Processamento (Databricks)
-| Camada | Tempo Médio | Volume Processado |
+### Processing Pipeline (Databricks)
+| Layer | Average Time | Processed Volume |
 |--------|-------------|-------------------|
 | **Bronze** | ~2 min | 1.5M+ rows |
-| **Silver** | ~3-5 min | 1.5M rows (após limpeza) |
+| **Silver** | ~3-5 min | 1.5M rows (post-cleaning) |
 | **Gold** | ~1-2 min | ~1K aggregations |
 | **Total Pipeline** | **~10 min** | **~1.5M rows** |
 
@@ -293,13 +308,13 @@ Este ganho foi obtido principalmente através de:
 
 ## 🔍 Key Generated Insights
 
-O pipeline demonstra como a arquitetura suporta análises complexas com baixo custo e alta performance, habilitando decisões estratégicas:
+The pipeline demonstrates how the architecture supports complex analyses with low cost and high performance, enabling strategic decisions:
 
-✅ **Portability Trends**: Detecção de fundos com tendência elevada de saída de capital para retenção preventiva.
-✅ **Concentration Risk**: Identificação de ativos com alta concentração em poucos investidores, mitigando riscos sistêmicos.
-✅ **Market Resilience**: Análise de como as cotas e o patrimônio reagiram a eventos de mercado específicos.
-✅ **Regulatory Compliance**: Garantia de integridade e consistência dos dados conforme a Resolução CVM 210.
-✅ **Economic Impact**: Correlação entre movimentações de mercado e variações no fluxo líquido de fundos específicos.
+✅ **Portability Trends**: Detection of funds with a high trend of capital outflow for preventive retention.
+✅ **Concentration Risk**: Identification of assets with high concentration in a few investors, mitigating systemic risks.
+✅ **Market Resilience**: Analysis of how quotas and equity reacted to specific market events.
+✅ **Regulatory Compliance**: Guarantee of data integrity and consistency as per CVM Resolution 210.
+✅ **Economic Impact**: Correlation between market movements and variations in the net flow of specific funds.
 
 ---
 
@@ -313,47 +328,47 @@ O pipeline demonstra como a arquitetura suporta análises complexas com baixo cu
 | **Gold** | Business metrics | Query performance |
 
 ### Why Databricks instead of EMR or Glue?
-- ✅ **Managed Service**: Facilidade de colaboração e menor overhead operacional.
-- ✅ **Delta Lake Features**: ACID transactions, Time Travel e Schema Evolution nativos.
-- ✅ **Cost-effective**: Auto-termination e Spot Instances reduzem custos significativamente.
-- ✅ **Performance**: Photon engine otimiza o processamento distribuído.
+- ✅ **Managed Service**: Ease of collaboration and lower operational overhead.
+- ✅ **Delta Lake Features**: Native ACID transactions, Time Travel, and Schema Evolution.
+- ✅ **Cost-effective**: Auto-termination and Spot Instances significantly reduce costs.
+- ✅ **Performance**: Photon engine optimizes distributed processing.
 
 ### Why Parquet + Snappy?
-- **Parquet**: Formato colunar (selective scan) que lê apenas as colunas necessárias para a query.
-- **Snappy**: Velocidade de descompressão 2-3x mais rápida que GZIP, ideal para processamento em tempo real.
-- **Cost-benefit**: Ocupa ~60% do tamanho de um CSV GZIP, mas permite queries muito mais rápidas e baratas.
+- **Parquet**: Columnar format (selective scan) that reads only the columns necessary for the query.
+- **Snappy**: Decompression speed 2-3x faster than GZIP, ideal for real-time processing.
+- **Cost-benefit**: Occupies ~60% of the size of a GZIP CSV but allows much faster and cheaper queries.
 
 ---
 
-## 👨‍💻 Autor
+## 👨‍💻 About the Author
 
 **Gabriel Henrique - Data Engineer**
 🎓 Data Engineering Post-Graduate Student | **FIAP**
 💼 Specialized in Modern Data Architectures on AWS (S3, Lambda, Databricks, PySpark)
-🚀 Experience with ELT pipelines, Medallion Architecture, and performance optimization
+🚀 Data Engineer focused on solving real-world data problems.
 
-� *Open to opportunities in Data Engineering, Analytics Engineering and Cloud Data Platforms.*
-
----
-
-## 📝 Licença
-
-Este projeto é parte de um trabalho acadêmico (**Tech Challenge - FIAP Post-Graduate Program**).  
-Dados públicos fornecidos pela **CVM (Comissão de Valores Mobiliários)**.
+💡 *Open to opportunities in Data Engineering, Analytics Engineering, and Cloud Data Platforms.*
 
 ---
 
-## 🙏 Agradecimentos
+## 📝 License
 
-- **CVM** por disponibilizar microdados financeiros públicos.
-- **FIAP** pelo ambiente de aprendizado focado em desafios práticos do mercado.
-- **AWS** pela documentação completa e ferramentas poderosas de Engenharia de Dados.
+This project is part of an academic work (**Tech Challenge - FIAP Post-Graduate Program**).  
+Public data provided by **CVM (Commission of Securities and Exchange of Brazil)**.
+
+---
+
+## 🙏 Acknowledgments
+
+- **CVM** for providing public financial microdata.
+- **FIAP** for the learning environment focused on practical market challenges.
+- **AWS** for complete documentation and powerful Data Engineering tools.
 
 ⭐ *If this project was useful, consider giving it a star on the repository!*
 
-**Developed with ❤️ using AWS Lambda, S3, Databricks and PySpark.**
+**Developed with ❤️ using AWS Lambda, S3, Databricks, and PySpark.**
 > [!NOTE]
-> Este projeto foi desenvolvido em ambiente de laboratório AWS Academy para fins educacionais. 
-> Os recursos demonstrados foram provisionados temporariamente e posteriormente removidos.
+> This project was developed in an AWS Academy laboratory environment for educational purposes. 
+> The demonstrated resources were provisioned temporarily and subsequently removed.
 
-**Desenvolvido com ❤️ e ☕ por um Engenheiro de Dados apaixonado por resolver problemas reais.**
+**Developed with ❤️ and ☕ by a Data Engineer passionate about solving real problems.**

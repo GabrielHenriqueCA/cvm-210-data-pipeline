@@ -172,21 +172,18 @@ eng-dados-project/
 │   ├── data_processing.ipynb     # Processing and transformations
 │   └── analytics.ipynb           # Portability analysis and insights
 │
-├── src/                          # Reusable Python code
-│   ├── __init__.py
-│   ├── utils.py                  # Utility functions (formatting, validation)
-│   └── s3_helper.py              # Helper for S3 operations
+├── lambda/                          # Reusable Python code
+│   ├── lambda_function.py            # Lambda function for daily ingestion
 │
 ├── docs/                         # Technical documentation
 │   ├── lambda_ingestion.md      # Lambda ingestion details
 │   ├── data_pipeline.md         # ELT pipeline details
 │   └── analytics_guide.md       # Guide for available analyses
-│
-├── lambda_function.py            # Lambda function for daily ingestion
+|
+├── requirements/
+|   ├── requirements.txt            # Python dependencies
 │
 ├── .gitignore                    # Git ignored files
-├── .env.example                  # Environment variables template
-├── requirements.txt              # Python dependencies
 ├── LICENSE                       # MIT License
 └── README.md                     # This file
 ```

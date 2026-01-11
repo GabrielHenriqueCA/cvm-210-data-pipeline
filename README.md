@@ -1,4 +1,5 @@
-# CVM 210 Data Pipeline
+# 📊 CVM 210 Data Pipeline | End-to-End Cloud Data Platform for Financial Analytics
+
 
 ![Project Banner](assets/images/project_banner.png)
 
@@ -45,11 +46,12 @@ The goal was to solve a real business problem, from **automated ingestion** to *
 
 ## 🚀 TL;DR
 
-- **Daily automated ingestion** of CVM 210 data via AWS Lambda
-- **Cloud Data Lake** on Amazon S3
-- **ELT processing** on Databricks with Medallion Architecture
-- **Delta Lake** with schema evolution, time travel, and ACID compliance
-- **Business analytics** focused on fund portability and risk detection
+- End-to-end **data engineering pipeline** for **CVM 210** regulatory data
+- **Automated daily ingestion** using AWS Lambda
+- **AWS-based Data Lake** on Amazon S3
+- **ELT processing** on Databricks with **Medallion Architecture**
+- **Delta Lake** enabling ACID transactions, schema evolution, and time travel
+- **Decision-ready analytics** for fund portability, capital outflow risk, and regulatory insights
 
 ---
 
@@ -169,6 +171,7 @@ eng-dados-project/
 │   ├── main_pipeline.ipynb       # Main pipeline (Bronze → Silver → Gold)
 │   └── analytics.ipynb           # Portability analysis and insights
 │
+<<<<<<< HEAD
 ├── lambda/                       # AWS Lambda function
 │   └── lambda_function.py        # Lambda function for daily ingestion
 │
@@ -179,6 +182,18 @@ eng-dados-project/
 │
 ├── requirements/                 # Python dependencies
 │   └── requirements.txt          # Project dependencies
+=======
+├── lambda/                          # Reusable Python code
+│   ├── lambda_function.py            # Lambda function for daily ingestion
+│
+├── docs/                         # Technical documentation
+│   ├── lambda_ingestion.md      # Lambda ingestion details
+│   ├── data_pipeline.md         # ELT pipeline details
+│   └── analytics_guide.md       # Guide for available analyses
+|
+├── requirements/
+|   ├── requirements.txt            # Python dependencies
+>>>>>>> f7c61e0cd6d6ecec9ca7ce7d0de7ca7a76be0a85
 │
 ├── .gitignore                    # Git ignored files
 ├── LICENSE                       # MIT License

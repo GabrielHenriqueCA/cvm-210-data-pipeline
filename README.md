@@ -259,34 +259,15 @@ O projeto gera **insights acionáveis** para o time de negócios:
 
 ---
 
-## 💰 Otimização de Custos
+## 💰 Otimização de Custos (Resumo Executivo)
 
-> [!TIP]
-> **Estratégias para Reduzir Custos Cloud**
+💰 **Estimated annual savings**: For 10,000 queries/year, savings of **~$137** (from $172 to $35).
 
-### AWS Lambda
-- ✅ **Memory optimization**: 512MB (ajustado para workload)
-- ✅ **Reserved concurrency**: Evita custos inesperados
-- ✅ **Timeout**: 60 segundos (just enough para download)
-- 💡 **Custo estimado**: < $1/mês (execução diária)
-
-### Amazon S3
-- ✅ **Lifecycle policies**: Mover dados antigos para S3 Glacier após 90 dias
-- ✅ **Intelligent-Tiering**: Para dados com padrões de acesso variáveis
-- ✅ **Particionamento eficiente**: Reduz custo de queries Athena/Databricks
-- 💡 **Custo estimado**: ~$1-3/mês (para ~20GB/ano)
-
-### Databricks
-- ✅ **Cluster autoscaling**: Min 1 worker, Max 3 workers
-- ✅ **Spot instances**: Economia de até 80% em workers
-- ✅ **Auto-termination**: 15 minutos de inatividade
-- ✅ **Job clusters**: Usar em produção (não interactive)
-- 💡 **Custo estimado**: $50-100/mês (depende de uso)
-
-### Recomendação para Produção
-
-> [!NOTE]
-> **Infrastructure as Code**: Em produção, recomenda-se usar **AWS CloudFormation** ou **Terraform** para provisionamento automatizado. Este projeto foi configurado via console AWS para fins de laboratório e prototipagem rápida.
+Este ganho foi obtido principalmente através de:
+- **Uso de formatos colunares (Parquet)**: Redução drástica na quantidade de dados lidos.
+- **Compressão Snappy**: Equilíbrio perfeito entre taxa de compressão e velocidade de leitura.
+- **Arquitetura Medallion**: Redução de scans desnecessários ao consultar camadas refinadas.
+- **Processamento Serverless / Sob Demanda**: Uso eficiente de AWS Lambda e clusters Databricks com auto-termination.
 
 ---
 
@@ -299,7 +280,6 @@ O projeto gera **insights acionáveis** para o time de negócios:
 | **Memory Used** | ~300-400 MB |
 | **Data Downloaded** | ~800 MB - 1.2 GB |
 | **Upload to S3** | ~5-8 segundos |
-| **Monthly Executions** | 30 (1x por dia) |
 
 ### Pipeline de Processamento (Databricks)
 | Camada | Tempo Médio | Volume Processado |
@@ -309,150 +289,71 @@ O projeto gera **insights acionáveis** para o time de negócios:
 | **Gold** | ~1-2 min | ~1K aggregations |
 | **Total Pipeline** | **~10 min** | **~1.5M rows** |
 
-### Otimizações Implementadas
-- ✅ **Z-Ordering** por CNPJ_FUNDO (melhora queries em 40%)
-- ✅ **Particionamento** por ano/mês (reduz full scans)
-- ✅ **Delta Lake OPTIMIZE** (compactação de small files)
-- ✅ **Broadcast joins** para tabelas pequenas
+---
+
+## 🔍 Key Generated Insights
+
+O pipeline demonstra como a arquitetura suporta análises complexas com baixo custo e alta performance, habilitando decisões estratégicas:
+
+✅ **Portability Trends**: Detecção de fundos com tendência elevada de saída de capital para retenção preventiva.
+✅ **Concentration Risk**: Identificação de ativos com alta concentração em poucos investidores, mitigando riscos sistêmicos.
+✅ **Market Resilience**: Análise de como as cotas e o patrimônio reagiram a eventos de mercado específicos.
+✅ **Regulatory Compliance**: Garantia de integridade e consistência dos dados conforme a Resolução CVM 210.
+✅ **Economic Impact**: Correlação entre movimentações de mercado e variações no fluxo líquido de fundos específicos.
 
 ---
 
-## 🔧 Troubleshooting
+## 🧠 Technical Decisions
 
-### Problema: Lambda timeout ao baixar arquivos
+### Why Medallion Architecture?
+| Layer | Purpose | Benefit |
+|-------|---------|---------|
+| **Bronze** | Immutable raw data | Audit and reprocessing |
+| **Silver** | Clean and structured data | Quality and consistency |
+| **Gold** | Business metrics | Query performance |
 
-**Sintoma**: Função Lambda termina com timeout error  
-**Causa**: Arquivo CVM muito grande ou conexão lenta  
-**Solução**:
-```python
-# Aumentar timeout da função Lambda
-# Em lambda configuration:
-Timeout: 120 seconds (ao invés de 60)
-```
+### Why Databricks instead of EMR or Glue?
+- ✅ **Managed Service**: Facilidade de colaboração e menor overhead operacional.
+- ✅ **Delta Lake Features**: ACID transactions, Time Travel e Schema Evolution nativos.
+- ✅ **Cost-effective**: Auto-termination e Spot Instances reduzem custos significativamente.
+- ✅ **Performance**: Photon engine otimiza o processamento distribuído.
 
-### Problema: Erro de permissão S3
-
-**Sintoma**: `AccessDenied` ao fazer upload no S3  
-**Causa**: IAM Role da Lambda sem permissões adequadas  
-**Solução**:
-```json
-{
-  "Effect": "Allow",
-  "Action": [
-    "s3:PutObject",
-    "s3:GetObject",
-    "s3:ListBucket"
-  ],
-  "Resource": [
-    "arn:aws:s3:::seu-bucket/*",
-    "arn:aws:s3:::seu-bucket"
-  ]
-}
-```
-
-### Problema: Databricks não consegue ler S3
-
-**Sintoma**: `CredentialRetrievalException` no Databricks  
-**Causa**: Credenciais AWS não configuradas ou IAM Role ausente  
-**Solução (Recomendado - IAM Role)**:
-```python
-# Configure Instance Profile com IAM Role no cluster Databricks
-# Databricks Admin Console > Cluster > Advanced Options > AWS IAM Role
-spark.conf.set("fs.s3a.aws.credentials.provider", 
-               "com.amazonaws.auth.InstanceProfileCredentialsProvider")
-```
-
-**Solução Alternativa (Databricks Secrets)**:
-```python
-# Apenas se IAM Role não for viável
-spark.conf.set("fs.s3a.access.key", dbutils.secrets.get(scope="aws", key="access-key"))
-spark.conf.set("fs.s3a.secret.key", dbutils.secrets.get(scope="aws", key="secret-key"))
-```
-
-### Problema: Schema evolution error na Silver
-
-**Sintoma**: `AnalysisException: incompatible schema`  
-**Causa**: Mudança de schema na fonte CVM  
-**Solução**:
-```python
-# Habilitar mergeSchema no read
-df = spark.read.option("mergeSchema", "true").format("delta").load("path")
-```
-
-### Problema: Out of Memory no Databricks
-
-**Sintoma**: `OutOfMemoryError` durante processamento  
-**Causa**: Dataset grande + cluster small  
-**Solução**:
-- Aumentar workers do cluster (2-3 workers)
-- Usar `repartition()` para distribuir dados
-- Processar em batches por mês
+### Why Parquet + Snappy?
+- **Parquet**: Formato colunar (selective scan) que lê apenas as colunas necessárias para a query.
+- **Snappy**: Velocidade de descompressão 2-3x mais rápida que GZIP, ideal para processamento em tempo real.
+- **Cost-benefit**: Ocupa ~60% do tamanho de um CSV GZIP, mas permite queries muito mais rápidas e baratas.
 
 ---
 
-## 🔮 Próximos Passos
+## 👨‍💻 Autor
 
+**Gabriel Henrique - Data Engineer**
+🎓 Data Engineering Post-Graduate Student | **FIAP**
+💼 Specialized in Modern Data Architectures on AWS (S3, Lambda, Databricks, PySpark)
+🚀 Experience with ELT pipelines, Medallion Architecture, and performance optimization
+
+� *Open to opportunities in Data Engineering, Analytics Engineering and Cloud Data Platforms.*
+
+---
+
+## 📝 Licença
+
+Este projeto é parte de um trabalho acadêmico (**Tech Challenge - FIAP Post-Graduate Program**).  
+Dados públicos fornecidos pela **CVM (Comissão de Valores Mobiliários)**.
+
+---
+
+## 🙏 Agradecimentos
+
+- **CVM** por disponibilizar microdados financeiros públicos.
+- **FIAP** pelo ambiente de aprendizado focado em desafios práticos do mercado.
+- **AWS** pela documentação completa e ferramentas poderosas de Engenharia de Dados.
+
+⭐ *If this project was useful, consider giving it a star on the repository!*
+
+**Developed with ❤️ using AWS Lambda, S3, Databricks and PySpark.**
 > [!NOTE]
-> **Evolução Estratégica do Projeto**
-
-### Integração com CRM e Automação Comercial
-
-**Próximas implementações planejadas:**
-
-1. **📧 Alertas Automáticos para Especialistas de Investimento**
-   - Disparo de email quando cliente solicitar **portabilidade de saída**
-   - Notificação contém: dados do fundo, valor estimado, urgência
-   - Permite ação rápida de retenção
-
-2. **🎯 Integração com CRM para Captação**
-   - Usar informações de clientes que solicitaram portabilidade **de entrada**
-   - Acionar ferramentas de **blindagem de capital**
-   - Criar tarefas automáticas no CRM para equipe comercial
-
-3. **📊 Dashboards Analíticos**
-   - Power BI / Databricks SQL
-   - Visualização de tendências de portabilidade
-   - Indicadores de risco por fundo
-
-4. **🔔 Orquestração Completa do Pipeline**
-   - Apache Airflow ou Databricks Workflows
-   - Monitoramento de falhas e alertas
-
-5. **📚 Catálogo e Governança de Dados**
-   - Documentação automática de schemas
-   - Data lineage completo
-   - Políticas de acesso e privacidade
-
----
-
-## 🌟 Diferenciais do Projeto
-
-- ✅ **Problema real e regulatório** (CVM 210)
-- ✅ **Solução criada mesmo com limitações de acesso à fonte**
-- ✅ **Arquitetura moderna, escalável e alinhada ao mercado**
-- ✅ **Integração entre AWS e Databricks**
-- ✅ **Foco não apenas técnico, mas também estratégico e financeiro**
-- ✅ **Projeto desenvolvido end-to-end, individualmente**
-- ✅ **Alinhado às competências esperadas de um Engenheiro de Dados Sênior**
-
----
-
-## 👨‍💻 Sobre o Autor
-
-Este projeto foi desenvolvido como demonstração de competências técnicas e estratégicas em **Engenharia de Dados**, cobrindo:
-
-- 🏗️ **Arquitetura de dados** (Medallion, Data Lake)
-- ☁️ **Cloud computing** (AWS)
-- ⚡ **Processamento distribuído** (PySpark, Delta Lake)
-- 📊 **Governança de dados**
-- 💼 **Visão de negócio** (insights acionáveis)
-
----
-
-## 📄 Licença
-
-Este projeto é de propriedade privada e foi desenvolvido para fins de demonstração técnica.
-
----
+> Este projeto foi desenvolvido em ambiente de laboratório AWS Academy para fins educacionais. 
+> Os recursos demonstrados foram provisionados temporariamente e posteriormente removidos.
 
 **Desenvolvido com ❤️ e ☕ por um Engenheiro de Dados apaixonado por resolver problemas reais.**

@@ -311,9 +311,13 @@ This gain was achieved mainly through:
 The pipeline demonstrates how the architecture supports complex analyses with low cost and high performance, enabling strategic decisions:
 
 ✅ **Portability Trends**: Detection of funds with a high trend of capital outflow for preventive retention.
+
 ✅ **Concentration Risk**: Identification of assets with high concentration in a few investors, mitigating systemic risks.
+
 ✅ **Market Resilience**: Analysis of how quotas and equity reacted to specific market events.
+
 ✅ **Regulatory Compliance**: Guarantee of data integrity and consistency as per CVM Resolution 210.
+
 ✅ **Economic Impact**: Correlation between market movements and variations in the net flow of specific funds.
 
 ---
@@ -343,8 +347,11 @@ The pipeline demonstrates how the architecture supports complex analyses with lo
 ## 👨‍💻 About the Author
 
 **Gabriel Henrique - Data Engineer**
+
 🎓 Data Engineering Post-Graduate Student | **FIAP**
+
 💼 Specialized in Modern Data Architectures on AWS (S3, Lambda, Databricks, PySpark)
+
 🚀 Data Engineer focused on solving real-world data problems.
 
 💡 *Open to opportunities in Data Engineering, Analytics Engineering, and Cloud Data Platforms.*
@@ -353,7 +360,8 @@ The pipeline demonstrates how the architecture supports complex analyses with lo
 
 ## 📝 License
 
-This project is part of an academic work (**Tech Challenge - FIAP Post-Graduate Program**).  
+This project is part of an academic work.
+
 Public data provided by **CVM (Commission of Securities and Exchange of Brazil)**.
 
 ---
@@ -361,7 +369,6 @@ Public data provided by **CVM (Commission of Securities and Exchange of Brazil)*
 ## 🙏 Acknowledgments
 
 - **CVM** for providing public financial microdata.
-- **FIAP** for the learning environment focused on practical market challenges.
 - **AWS** for complete documentation and powerful Data Engineering tools.
 
 ⭐ *If this project was useful, consider giving it a star on the repository!*
@@ -370,5 +377,3 @@ Public data provided by **CVM (Commission of Securities and Exchange of Brazil)*
 > [!NOTE]
 > This project was developed in an AWS Academy laboratory environment for educational purposes. 
 > The demonstrated resources were provisioned temporarily and subsequently removed.
-
-**Developed with ❤️ and ☕ by a Data Engineer passionate about solving real problems.**

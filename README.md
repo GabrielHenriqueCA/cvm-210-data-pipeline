@@ -171,7 +171,6 @@ eng-dados-project/
 │   ├── main_pipeline.ipynb       # Main pipeline (Bronze → Silver → Gold)
 │   └── analytics.ipynb           # Portability analysis and insights
 │
-<<<<<<< HEAD
 ├── lambda/                       # AWS Lambda function
 │   └── lambda_function.py        # Lambda function for daily ingestion
 │
@@ -182,7 +181,6 @@ eng-dados-project/
 │
 ├── requirements/                 # Python dependencies
 │   └── requirements.txt          # Project dependencies
-=======
 ├── lambda/                          # Reusable Python code
 │   ├── lambda_function.py            # Lambda function for daily ingestion
 │
@@ -193,7 +191,6 @@ eng-dados-project/
 |
 ├── requirements/
 |   ├── requirements.txt            # Python dependencies
->>>>>>> f7c61e0cd6d6ecec9ca7ce7d0de7ca7a76be0a85
 │
 ├── .gitignore                    # Git ignored files
 ├── LICENSE                       # MIT License

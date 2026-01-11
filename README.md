@@ -45,11 +45,12 @@ The goal was to solve a real business problem, from **automated ingestion** to *
 
 ## 🚀 TL;DR
 
-- **Daily automated ingestion** of CVM 210 data via AWS Lambda
-- **Cloud Data Lake** on Amazon S3
-- **ELT processing** on Databricks with Medallion Architecture
-- **Delta Lake** with schema evolution, time travel, and ACID compliance
-- **Business analytics** focused on fund portability and risk detection
+- End-to-end **data engineering pipeline** for **CVM 210** regulatory data
+- **Automated daily ingestion** using AWS Lambda
+- **AWS-based Data Lake** on Amazon S3
+- **ELT processing** on Databricks with **Medallion Architecture**
+- **Delta Lake** enabling ACID transactions, schema evolution, and time travel
+- **Decision-ready analytics** for fund portability, capital outflow risk, and regulatory insights
 
 ---
 
